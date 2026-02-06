@@ -58,7 +58,13 @@ def get_optimized_url(raw_url: str) -> str:
         print(f"DATABASE URL OPTIMIZATION WARNING: {e}")
         return raw_url
 
-DATABASE_URL = get_optimized_url(os.getenv("DATABASE_URL"))
+# Check for common environment variables used by Vercel and Supabase
+DATABASE_URL = get_optimized_url(
+    os.getenv("DATABASE_URL") or 
+    os.getenv("POSTGRES_URL") or 
+    os.getenv("SUPABASE_URL") or
+    os.getenv("SUPABASE_POSTGRES_URL")
+)
 
 engine = create_engine(DATABASE_URL, poolclass=NullPool)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
