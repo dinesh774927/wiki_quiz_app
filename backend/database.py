@@ -1,34 +1,55 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.engine import url as sa_url
 import os
+import re
 from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+def get_optimized_url(raw_url: str) -> str:
+    if not raw_url or "localhost" in raw_url:
+        return raw_url or "postgresql://user:password@localhost/wikiquiz"
+    
+    try:
+        # 1. Clean up common prefix issues before parsing
+        if raw_url.startswith("postgres://"):
+            raw_url = raw_url.replace("postgres://", "postgresql://", 1)
+        
+        # 2. Parse using SQLAlchemy's robust internal parser
+        u = sa_url.make_url(raw_url)
+        
+        # 3. Proactively switch to Supabase IPv4 Pooler (port 6543) if on Vercel
+        # Direct connection (5432) uses IPv6 and often fails on Vercel's network.
+        new_port = u.port
+        if u.host and "supabase.co" in u.host:
+            if not u.port or u.port == 5432:
+                print(f"UPGRADING CONNECTION: Changing host {u.host} to use port 6543 (Transaction Pooler)")
+                new_port = 6543
+        
+        # 4. Enforce SSL for cloud instances
+        new_query = dict(u.query)
+        if "sslmode" not in new_query:
+            new_query["sslmode"] = "require"
+            
+        # 5. Reconstruct a clean, standard URL
+        optimized = sa_url.URL.create(
+            drivername="postgresql",
+            username=u.username,
+            password=u.password,
+            host=u.host,
+            port=new_port,
+            database=u.database,
+            query=new_query
+        )
+        return str(optimized)
+    except Exception as e:
+        print(f"DATABASE URL OPTIMIZATION WARNING: {e}")
+        return raw_url
 
-if not DATABASE_URL:
-    DATABASE_URL = "postgresql://user:password@localhost/wikiquiz"
-
-# Use NullPool for serverless environments (Vercel) to avoid connection issues
-# and ensure we connect via SSL for cloud providers like Supabase
-if "localhost" not in DATABASE_URL:
-    # 1. SQLAlchemy requires 'postgresql://' not 'postgres://'
-    if DATABASE_URL.startswith("postgres://"):
-        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-
-    # 2. Proactive Port Fix for Supabase on Vercel:
-    # Most users copy port 5432, but Vercel needs 6543 (ipv4 pooler)
-    if "supabase.co" in DATABASE_URL and ":5432" in DATABASE_URL:
-        print("PROACTIVE FIX: Swapping Supabase port 5432 to 6543 for Vercel compatibility.")
-        DATABASE_URL = DATABASE_URL.replace(":5432", ":6543")
-
-    # 3. Force SSL for Cloud DBs
-    if "sslmode" not in DATABASE_URL:
-        separator = "&" if "?" in DATABASE_URL else "?"
-        DATABASE_URL += f"{separator}sslmode=require"
+DATABASE_URL = get_optimized_url(os.getenv("DATABASE_URL"))
 
 engine = create_engine(DATABASE_URL, poolclass=NullPool)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
