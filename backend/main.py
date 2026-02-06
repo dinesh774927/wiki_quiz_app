@@ -1,3 +1,8 @@
+import sys
+import os
+# Ensure the backend directory is in the python path for Vercel deployment
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
