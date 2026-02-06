@@ -9,7 +9,12 @@ import uvicorn
 from database import engine, Base
 from routers import quiz
 
-Base.metadata.create_all(bind=engine)
+try:
+    # Attempt to create tables on startup
+    Base.metadata.create_all(bind=engine)
+except Exception as db_err:
+    print(f"\nCRITICAL DATABASE ERROR: {db_err}")
+    print("The application will continue to run, but database features may fail.\n")
 
 app = FastAPI(title="Wiki Quiz API", description="Generate quizzes from Wikipedia articles.")
 
