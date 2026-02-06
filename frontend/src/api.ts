@@ -4,7 +4,7 @@ import axios from 'axios';
  * Backend Service Configuration
  * Centralized API client for all quiz-related operations.
  */
-const BASE_GATEWAY_URL = import.meta.env.VITE_API_URL || '/api';
+const BASE_GATEWAY_URL = '/api';
 
 const client = axios.create({
     baseURL: BASE_GATEWAY_URL,
