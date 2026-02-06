@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+beautifulsoup4
+requests
+google-genai
+python-dotenv
+asyncpg
+greenlet
