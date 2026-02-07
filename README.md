@@ -14,7 +14,7 @@ An automated assessment platform that transforms any Wikipedia article into an i
 ## 🛠️ Technical Stack
 
 - **Backend**: Python 3.12, FastAPI, SQLAlchemy
-- **Database**: PostgreSQL
+- **Database**: Supabase (PostgreSQL)
 - **Frontend**: React (Vite), Tailwind CSS, Framer Motion, Lucide Icons
 - **AI/LLM**: Google GenAI SDK (Gemini 2.0 Flash)
 - **Scraping**: BeautifulSoup4
@@ -40,11 +40,21 @@ An automated assessment platform that transforms any Wikipedia article into an i
 2. Install dependencies: `pip install -r requirements.txt`.
 3. Create a `.env` file:
    ```env
-   DATABASE_URL=postgresql://user:password@localhost/wikiquiz
+   DATABASE_URL=your_supabase_pooler_uri
    GEMINI_API_KEY=your_key_here
    ```
-4. Initialize the DB: `python init_db.py`.
+4. Initialize the DB: `python init_db.py` (Creates tables in Supabase).
 5. Start server: `python main.py`.
+
+### 🌍 Deployment (Vercel)
+1. Push the code to GitHub.
+2. Link the repository to Vercel.
+3. Configure **Environment Variables**:
+   - `DATABASE_URL`: Use Supabase **Transaction Pooler** URI.
+   - `GEMINI_API_KEY`: Your Gemini API key.
+4. Build Settings:
+   - Output Directory: `frontend/dist`
+   - Build Command: `npm run build`
 
 ### Frontend
 1. Navigate to `/frontend`.
