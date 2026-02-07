@@ -21,13 +21,19 @@ def get_optimized_url(raw_url: str) -> str:
         # 2. Parse using SQLAlchemy's parser
         u = sa_url.make_url(raw_url)
         
-        # 3. FIX: Sometimes an extra '@' or special character gets 
-        # stuck to the front of the host during manual config.
+        # 3. FIX: SQLAlchemy's parser sometimes splits at the FIRST '@' 
+        # instead of the LAST one if the password contains an '@'.
         clean_host = u.host
+        clean_password = u.password
         if clean_host and "@" in clean_host:
-            # If host is "Priya1@db.xxx", we only want "db.xxx"
-            clean_host = clean_host.split("@")[-1]
-            print(f"URL FIX: Cleaned host from '{u.host}' to '{clean_host}'")
+            # If host is "PassPart2@db.xxx", PassPart2 belongs to the password
+            parts = clean_host.rsplit("@", 1)
+            clean_host = parts[-1]
+            if clean_password:
+                clean_password = f"{clean_password}@{parts[0]}"
+            else:
+                clean_password = parts[0]
+            print(f"URL FIX: Reconstructed password and cleaned host to '{clean_host}'")
 
         # 4. Proactive Port Fix for Supabase on Vercel
         new_port = u.port
@@ -46,14 +52,14 @@ def get_optimized_url(raw_url: str) -> str:
         optimized = sa_url.URL.create(
             drivername="postgresql",
             username=u.username,
-            password=u.password,
+            password=clean_password,
             host=clean_host,
             port=new_port,
             database=u.database,
             query=new_query
         )
         
-        return str(optimized)
+        return optimized.render_as_string(hide_password=False)
     except Exception as e:
         print(f"DATABASE URL OPTIMIZATION WARNING: {e}")
         return raw_url

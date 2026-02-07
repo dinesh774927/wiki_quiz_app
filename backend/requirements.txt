@@ -8,3 +8,4 @@ google-genai
 python-dotenv
 asyncpg
 greenlet
+sqlalchemy-utils
